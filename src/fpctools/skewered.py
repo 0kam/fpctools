@@ -4,10 +4,9 @@ import math
 import copy
 from scipy import optimize as opt
 
-def homography_lensdist(source_path, destination_path):
-  # Read images
-  im1 = cv2.imread(source_path)
-  im2 = cv2.imread(destination_path)
+def homography_lensdist(src_img, dst_img):
+  im1 = dst_img
+  im2 = src_img
   # Akaze descripter
   akaze = cv2.AKAZE_create()
   kp1, des1 = akaze.detectAndCompute(im1, None)
@@ -106,16 +105,16 @@ def homography_lensdist(source_path, destination_path):
 
 """
 # example
+import cv2
 
-src = "1009.jpeg"
-dst = "1908.jpeg"
+src = cv2.imread("1009.jpeg")
+dst = cv2.imread("1908.jpeg")
 
 # result
-im1_dh = homography_lensdist(src, dst, rslt)
+src_dh = homography_lensdist(src, dst, rslt)
 cv2.imwrite("result_1009.png", im1_dh)
 
 # make a diff image
-im2 = cv2.imread(dst)
-im_diff = im2.astype(int) - im1_dh.astype(int)
+im_diff = dst.astype(int) - im1_dh.astype(int)
 cv2.imwrite("diff.png", np.abs(im_diff))
 """
