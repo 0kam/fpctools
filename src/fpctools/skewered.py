@@ -5,8 +5,8 @@ import copy
 from scipy import optimize as opt
 
 def homography_lensdist(src_img, dst_img):
-  im1 = dst_img
-  im2 = src_img
+  im1 = src_img
+  im2 = dst_img
   # Akaze descripter
   akaze = cv2.AKAZE_create()
   kp1, des1 = akaze.detectAndCompute(im1, None)
