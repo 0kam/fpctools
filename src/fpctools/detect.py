@@ -32,6 +32,19 @@ def snow_otsu(img):
     ret, thresh = cv2.threshold(gray,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
     return thresh
 
+def bluesky(img):
+    blue = im[:,:,0]
+    blur = cv2.GaussianBlur(blue,(5,5),0)
+    edge = cv2.Canny(blue, 100, 200)
+    blur[edge == 255] = 0
+    ret,thresh = cv2.threshold(blur,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+    skyline = np.apply_along_axis(lambda col: np.where(col == 0)[0].min(), 0, thresh)
+    sky_mask = np.zeros(blue.shape)
+    for i in range(0,blue.shape[1]):
+        col = sky_mask[:,i]
+        col[skyline[i]:] = 255
+        sky_mask[:,i] = col
+    return sky_mask
 
 """
 # example
