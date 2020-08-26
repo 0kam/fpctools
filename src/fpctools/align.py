@@ -4,7 +4,7 @@ import math
 import copy
 from scipy import optimize as opt
 
-def homography_lensdist(src_img, dst_img):
+def homography_lensdist(src_img, dst_img, ransac_th=100):
   im1 = src_img
   im2 = dst_img
   # Akaze descripter
@@ -30,7 +30,7 @@ def homography_lensdist(src_img, dst_img):
   pts2 = np.float32([ kp2[match.trainIdx].pt for match in good ])
   pts1 = pts1.reshape(-1,1,2)
   pts2 = pts2.reshape(-1,1,2)
-  hm, mask = cv2.findHomography(pts1, pts2, cv2.RANSAC, 100)
+  hm, mask = cv2.findHomography(pts1, pts2, cv2.RANSAC, ransac_th)
 
   pts1 = pts1[mask.astype('bool')]
   pts2 = pts2[mask.astype('bool')]
