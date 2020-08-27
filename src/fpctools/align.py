@@ -100,7 +100,7 @@ def homography_lensdist(src_img, dst_img, ransac_th=100):
   pts1_dh, rmse, hmat = homography(pts1_d, pts2)
   
   im1_dh = cv2.warpPerspective(im1_d, hmat, (im2.shape[1], im2.shape[0]))
-  return im1_dh
+  return im1_dh, map_d[0,:,:], map_d[1,:,:], hmat
 
 
 """
