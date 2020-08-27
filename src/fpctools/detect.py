@@ -33,7 +33,7 @@ def snow_otsu(img):
     return thresh
 
 def bluesky(img):
-    blue = im[:,:,0]
+    blue = img[:,:,0]
     blur = cv2.GaussianBlur(blue,(5,5),0)
     edge = cv2.Canny(blue, 100, 200)
     blur[edge == 255] = 0
