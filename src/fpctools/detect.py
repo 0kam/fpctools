@@ -24,12 +24,13 @@ def snow_watershed(img):
     snow = cv2.watershed(img,snow)
     snow = np.uint8(snow)
     snow[snow==2]=255
-    snow[snow!=255]=0
+    snow[snow!=255]=1
     return snow
 
 def snow_otsu(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     ret, thresh = cv2.threshold(gray,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+    thresh[thresh == 0] = 1
     return thresh
 
 def bluesky(img):
