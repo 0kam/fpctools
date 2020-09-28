@@ -4,37 +4,43 @@ import math
 import copy
 from scipy import optimize as opt
 
-def homography_lensdist(src_img, dst_img, ransac_th=100):
+def homography_lensdist(src_img, dst_img, flann = True, ransac_th=100):
   im1 = src_img
   im2 = dst_img
   # Akaze descripter
   akaze = cv2.AKAZE_create()
   kp1, des1 = akaze.detectAndCompute(im1, None)
   kp2, des2 = akaze.detectAndCompute(im2, None)
-  # Flann matching
-  FLANN_INDEX_LSH = 6
-  index_params= dict(algorithm = FLANN_INDEX_LSH,
-                     table_number = 6,  
-                     key_size = 12,     
-                     multi_probe_level = 1) 
-  search_params = dict(checks = 50)
-  flann = cv2.FlannBasedMatcher(index_params, search_params)
-  matches = flann.knnMatch(des1, des2, k = 2)
-  ratio = 0.8
+  if flann:
+      # Flann matcher
+      FLANN_INDEX_LSH = 6
+      index_params= dict(algorithm = FLANN_INDEX_LSH,
+                         table_number = 6,  
+                         key_size = 12,     
+                         multi_probe_level = 1) 
+      search_params = dict(checks = 50)
+      matcher = cv2.FlannBasedMatcher(index_params, search_params)
+  else: 
+      # Brute Force matcher
+      matcher = cv2.BFMatcher()
+  matches = matcher.knnMatch(des1, des2, k = 2)
+  ratio = 1
   good = []
   for m, n in matches:
-    if m.distance < ratio * n.distance:
-      good.append(m)
-  
+        if m.distance < ratio * n.distance:
+            good.append(m)
   pts1 = np.float32([ kp1[match.queryIdx].pt for match in good ])
   pts2 = np.float32([ kp2[match.trainIdx].pt for match in good ])
   pts1 = pts1.reshape(-1,1,2)
   pts2 = pts2.reshape(-1,1,2)
+  
+  # Filter matched points with RANSAC 
   hm, mask = cv2.findHomography(pts1, pts2, cv2.RANSAC, ransac_th)
 
   pts1 = pts1[mask.astype('bool')]
   pts2 = pts2[mask.astype('bool')]
   
+  # Lens Distortion
   def distort(pts, params):
     k1 = params[0]
     k2 = params[1]
@@ -80,14 +86,17 @@ def homography_lensdist(src_img, dst_img, ransac_th=100):
     rmse = np.mean(((pts1[:,0] - pts2[:,0])**2 + (pts1[:,1] - pts2[:,1])**2)**0.5) 
 
     return pts1, rmse, hmat
-
+  
+  # Lens Distortion Correction -> Homography Transformation 
   def distort_rmse(params):
     pts1_d = distort(pts1, params)
     pts1_dh = homography(pts1_d, pts2)
     return pts1_dh[1]
   
+  # Minimize the rmse of matched points
   res = opt.minimize(distort_rmse, x0 = [0] * 8, method = 'Nelder-Mead')
 
+  # Make map and remap source image
   height, width, channels = im1.shape
   map_x, map_y  = np.meshgrid(np.arange(width), np.arange(height))
   grid = np.stack([map_x.flatten(), map_y.flatten()]).T
@@ -100,8 +109,9 @@ def homography_lensdist(src_img, dst_img, ransac_th=100):
   pts1_dh, rmse, hmat = homography(pts1_d, pts2)
   
   im1_dh = cv2.warpPerspective(im1_d, hmat, (im2.shape[1], im2.shape[0]))
+  
+  # Return the transformed source image, map_u, map_v, homography matrix
   return im1_dh, map_d[0,:,:], map_d[1,:,:], hmat
-
 
 """
 # example
@@ -111,7 +121,7 @@ src = cv2.imread("1009.jpeg")
 dst = cv2.imread("1908.jpeg")
 
 # result
-src_dh = homography_lensdist(src, dst, rslt)
+src_dh = homography_lensdist(src, dst, flann = False)
 cv2.imwrite("result_1009.png", im1_dh)
 
 # make a diff image
